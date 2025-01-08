@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'com.google.protobuf' version '0.9.4'
     id 'application'
+    id 'idea'
 }
 
 group 'com.manoj.grpc'
@@ -19,21 +20,11 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
-    sourceSets {
-        main {
-            java {
-                srcDirs 'src/main/java'
-            }
-            proto {
-                srcDirs 'src/main/proto'
-            }
-        }
-        test {
-            java {
-                srcDirs 'src/test/java'
-            }
-        }
-    }
+}
+
+// Add duplicates strategy for all tasks
+tasks.withType(Copy) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 protobuf {
@@ -50,17 +41,19 @@ protobuf {
             grpc {}
         }
     }
-    generatedFilesBaseDir = "$projectDir/generated"
+    // Correctly specify the generation directories
+    generatedFilesBaseDir = "$buildDir/generated/source/proto"
 }
 
-// Add generated sources to main sourceSet
 sourceSets {
     main {
         java {
-            srcDirs += [
-                    "$projectDir/generated/main/java",
-                    "$projectDir/generated/main/grpc"
-            ]
+            srcDirs 'src/main/java'
+            srcDirs "$buildDir/generated/source/proto/main/java"
+            srcDirs "$buildDir/generated/source/proto/main/grpc"
+        }
+        proto {
+            srcDirs 'src/main/proto'
         }
     }
 }
@@ -73,6 +66,7 @@ dependencies {
     implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
 
     implementation 'org.slf4j:slf4j-api:2.0.9'
     implementation 'ch.qos.logback:logback-classic:1.4.11'
@@ -97,4 +91,17 @@ tasks.withType(JavaCompile) {
 // Clean generated sources as part of clean task
 clean {
     delete protobuf.generatedFilesBaseDir
+}
+
+// Add idea plugin configuration to recognize generated sources
+idea {
+    module {
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java")
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc")
+    }
+}
+
+// Add duplicates strategy for processResources task specifically
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
