@@ -1,7 +1,7 @@
 package com.manoj.grpc.server;
 
-import com.manoj.grpc.HelloRequest;
-import com.manoj.grpc.HelloReply;
+import com.manoj.grpc.Greeting.HelloRequest;  // Corrected import
+import com.manoj.grpc.Greeting.HelloReply;   // Corrected import
 import com.manoj.grpc.GreeterGrpc;
 import com.manoj.grpc.GreeterServiceImpl;
 import io.grpc.inprocess.InProcessChannelBuilder;

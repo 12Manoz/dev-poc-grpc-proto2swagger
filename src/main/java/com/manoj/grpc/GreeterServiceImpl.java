@@ -8,12 +8,12 @@ public class GreeterServiceImpl extends GreeterGrpc.GreeterImplBase {
     private static final Logger logger = LoggerFactory.getLogger(GreeterServiceImpl.class);
 
     @Override
-    public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+    public void sayHello(Greeting.HelloRequest request, StreamObserver<Greeting.HelloReply> responseObserver) {
         logger.info("Received hello request from: {}", request.getName());
 
         try {
             // Create the response
-            HelloReply reply = HelloReply.newBuilder()
+            Greeting.HelloReply reply = Greeting.HelloReply.newBuilder()
                     .setMessage("Hello, " + request.getName())
                     .build();
 
