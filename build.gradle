@@ -1,0 +1,78 @@
+plugins {
+    id 'java'
+    id 'com.google.protobuf' version '0.9.4' // Or latest
+//    id 'io.grpc' version '1.45.0' // Updated to a more recent version
+    id 'application'
+}
+
+group 'com.manoj.grpc'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.21.9" // Specify a protoc version
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.45.0" // Updated to the newer version
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [
+                    'build/generated/source/proto/main/java',
+                    'build/generated/source/proto/main/grpc'
+            ]
+        }
+    }
+}
+
+application {
+    mainClass = 'com.manoj.grpc.ApplicationGRPC'
+}
+
+dependencies {
+    implementation 'io.grpc:grpc-netty-shaded:1.59.0' // Use a recent version
+    implementation 'io.grpc:grpc-protobuf:1.59.0' // Use a recent version
+    implementation 'io.grpc:grpc-stub:1.59.0' // Use a recent version
+
+    // Logging (SLF4j API + Logback implementation)
+    implementation 'org.slf4j:slf4j-api:2.0.9' // Or latest
+    implementation 'ch.qos.logback:logback-classic:1.4.11' // Or latest
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation 'io.grpc:grpc-testing:1.59.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    dependsOn tasks.named('generateProto')
+}
+
+clean {
+    delete 'build/generated/source/proto'
+}
