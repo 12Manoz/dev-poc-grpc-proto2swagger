@@ -16,15 +16,36 @@ repositories {
 def grpcVersion = '1.59.0'
 def protobufVersion = '3.21.9'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+configurations {
+    protoFiles
 }
 
-// Add duplicates strategy for all tasks
-tasks.withType(Copy) {
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+dependencies {
+    implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+
+    // Proto dependencies
+    protoFiles "com.google.api.grpc:proto-google-common-protos:2.22.0"
+    protoFiles "io.grpc:grpc-services:${grpcVersion}"
+
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.11'
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation "io.grpc:grpc-testing:${grpcVersion}"
+}
+
+// Download and extract proto files
+task extractProtos(type: Copy) {
+    configurations.protoFiles.each {
+        from zipTree(it)
+        include '**/*.proto'
+        into "$buildDir/extracted-protos"
+    }
 }
 
 protobuf {
@@ -40,11 +61,13 @@ protobuf {
         all()*.plugins {
             grpc {}
         }
+        all()*.builtins {
+            java {}
+        }
     }
-    // Correctly specify the generation directories
-    generatedFilesBaseDir = "$buildDir/generated/source/proto"
 }
 
+// Configure source sets for proto and generated code
 sourceSets {
     main {
         java {
@@ -54,54 +77,35 @@ sourceSets {
         }
         proto {
             srcDirs 'src/main/proto'
+            srcDirs "$buildDir/extracted-protos"
         }
     }
 }
 
+// Make proto generation depend on proto extraction
+tasks.generateProto.dependsOn extractProtos
+
 application {
     mainClass = 'com.manoj.grpc.ApplicationGRPC'
-}
-
-dependencies {
-    implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
-    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
-    implementation "io.grpc:grpc-stub:${grpcVersion}"
-    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
-
-    implementation 'org.slf4j:slf4j-api:2.0.9'
-    implementation 'ch.qos.logback:logback-classic:1.4.11'
-
-    // For Java 9+ compatibility
-    implementation 'javax.annotation:javax.annotation-api:1.3.2'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
-    testImplementation "io.grpc:grpc-testing:${grpcVersion}"
 }
 
 test {
     useJUnitPlatform()
 }
 
-// Make sure proto generation happens before Java compilation
-tasks.withType(JavaCompile) {
-    dependsOn 'generateProto'
+processResources {
+    exclude '**/*.proto'
 }
 
-// Clean generated sources as part of clean task
-clean {
-    delete protobuf.generatedFilesBaseDir
-}
-
-// Add idea plugin configuration to recognize generated sources
 idea {
     module {
-        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java")
-        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc")
+        sourceDirs += file("$buildDir/generated/source/proto/main/java")
+        sourceDirs += file("$buildDir/generated/source/proto/main/grpc")
     }
 }
 
-// Add duplicates strategy for processResources task specifically
-processResources {
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+// Clean task configuration
+clean {
+    delete "$buildDir/generated/source/proto"
+    delete "$buildDir/extracted-protos"
 }

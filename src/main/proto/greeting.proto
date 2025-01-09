@@ -1,18 +1,18 @@
 syntax = "proto3";
 
-package com.manoj.grpc;
+package greet;
+
+option java_package = "com.manoj.grpc";
+option java_multiple_files = true;
 
 service Greeter {
-  // Define a simple "sayHello" RPC method
-  rpc SayHello (HelloRequest) returns (HelloReply);
+  rpc SayHello (HelloRequest) returns (HelloResponse) {}
 }
 
-// The request message containing the user's name.
 message HelloRequest {
   string name = 1;
 }
 
-// The response message containing the greetings.
-message HelloReply {
+message HelloResponse {
   string message = 1;
 }
